@@ -8,6 +8,8 @@ from enum import Enum
 from pydantic import BaseModel
 from typing import Tuple
 
+# Import the local Ollama model
+from llm.local_ollama import LocalOllamaModel  # Assuming you have a module for local Ollama models
 
 class ModelProvider(str, Enum):
     """Enum for supported LLM providers"""
@@ -16,8 +18,7 @@ class ModelProvider(str, Enum):
     GEMINI = "Gemini"
     GROQ = "Groq"
     OPENAI = "OpenAI"
-
-
+    OLLAMA = "Ollama"
 
 class LLMModel(BaseModel):
     """Represents an LLM model configuration"""
@@ -40,7 +41,6 @@ class LLMModel(BaseModel):
     def is_gemini(self) -> bool:
         """Check if the model is a Gemini model"""
         return self.model_name.startswith("gemini")
-
 
 # Define available models
 AVAILABLE_MODELS = [
@@ -104,6 +104,11 @@ AVAILABLE_MODELS = [
         model_name="o3-mini",
         provider=ModelProvider.OPENAI
     ),
+    LLMModel(
+        display_name="[ollama] llama3.2",
+        model_name="llama3.2",
+        provider=ModelProvider.OLLAMA
+    ),
 ]
 
 # Create LLM_ORDER in the format expected by the UI
@@ -113,19 +118,16 @@ def get_model_info(model_name: str) -> LLMModel | None:
     """Get model information by model_name"""
     return next((model for model in AVAILABLE_MODELS if model.model_name == model_name), None)
 
-def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | ChatGroq | None:
+def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | ChatGroq | LocalOllamaModel | None:
     if model_provider == ModelProvider.GROQ:
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
-            # Print error to console
             print(f"API Key Error: Please make sure GROQ_API_KEY is set in your .env file.")
             raise ValueError("Groq API key not found.  Please make sure GROQ_API_KEY is set in your .env file.")
         return ChatGroq(model=model_name, api_key=api_key)
     elif model_provider == ModelProvider.OPENAI:
-        # Get and validate API key
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            # Print error to console
             print(f"API Key Error: Please make sure OPENAI_API_KEY is set in your .env file.")
             raise ValueError("OpenAI API key not found.  Please make sure OPENAI_API_KEY is set in your .env file.")
         return ChatOpenAI(model=model_name, api_key=api_key)
@@ -147,3 +149,6 @@ def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | Ch
             print(f"API Key Error: Please make sure GOOGLE_API_KEY is set in your .env file.")
             raise ValueError("Google API key not found.  Please make sure GOOGLE_API_KEY is set in your .env file.")
         return ChatGoogleGenerativeAI(model=model_name, api_key=api_key)
+    elif model_provider == ModelProvider.OLLAMA:
+        # Return the local Ollama model instance
+        return LocalOllamaModel(model_name=model_name)

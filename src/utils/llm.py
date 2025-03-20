@@ -4,6 +4,7 @@ import json
 from typing import TypeVar, Type, Optional, Any
 from pydantic import BaseModel
 from utils.progress import progress
+from llm.local_ollama import LocalOllamaModel  # Add this import
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -35,6 +36,11 @@ def call_llm(
     
     model_info = get_model_info(model_name)
     llm = get_model(model_name, model_provider)
+    
+    # Handle Ollama model separately
+    if isinstance(llm, LocalOllamaModel):
+        result = llm.invoke(prompt)
+        return pydantic_model(**json.loads(result))
     
     # For non-JSON support models, we can use structured output
     if not (model_info and not model_info.has_json_mode()):

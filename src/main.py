@@ -19,6 +19,7 @@ from utils.display import print_trading_output
 from utils.analysts import ANALYST_ORDER, get_analyst_nodes
 from utils.progress import progress
 from llm.models import LLM_ORDER, get_model_info
+from llm.local_ollama import LocalOllamaModel  # Add this import
 
 import argparse
 from datetime import datetime
